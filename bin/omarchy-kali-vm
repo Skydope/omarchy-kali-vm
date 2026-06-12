@@ -150,6 +150,7 @@ install_kali() {
   echo "sudo is required to load the nbd kernel module for initial image configuration."
   echo ""
   sudo -v || exit 1
+  sudo modprobe nbd max_part=8
 
   mkdir -p "$KALI_SHARED_DIR"
 
