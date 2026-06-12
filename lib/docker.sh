@@ -105,8 +105,15 @@ if qemu-system-x86_64 -spice help >/dev/null 2>&1; then
 fi
 
 echo "Installing QEMU SPICE module..."
+# Run apt as root (no _apt sandbox) because cap_drop ALL blocks chown/chmod
+# that apt's privilege-drop needs. Use a temp cache directory owned by root.
+mkdir -p /tmp/apt-cache
 DEBIAN_FRONTEND=noninteractive apt-get -qq update
-DEBIAN_FRONTEND=noninteractive apt-get -qq --no-install-recommends -y install qemu-system-modules-spice > /dev/null
+DEBIAN_FRONTEND=noninteractive apt-get -qq --no-install-recommends -y \
+  -o APT::Sandbox::User=root \
+  -o Dir::Cache::archives=/tmp/apt-cache \
+  install qemu-system-modules-spice > /dev/null
+rm -rf /tmp/apt-cache /var/lib/apt/lists/*
 EOF
 
   chmod +x "$KALI_CONFIG_DIR/start.sh"
