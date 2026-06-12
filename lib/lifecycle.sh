@@ -45,8 +45,7 @@ launch_kali() {
       exit 1
     fi
   done
-  docker exec "$CONTAINER_NAME" chown "$(id -u):$(id -g)" /storage/spice.sock
-  docker exec "$CONTAINER_NAME" chmod 660 /storage/spice.sock
+  docker exec "$CONTAINER_NAME" chmod 666 /storage/spice.sock
 
   if [[ -t 1 ]]; then
     if [[ $KEEP_ALIVE = "true" ]]; then
