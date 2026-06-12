@@ -1,62 +1,73 @@
 # omarchy-kali-vm
 
-Provides an accessible "click-to-install" Kali Linux VM using a dockerized QEMU environment to minimize dependencies. Intended for [Omarchy](https://github.com/basecamp/omarchy), but should work on any Arch setup with `docker` engine set up. Supports clipboard-sharing + display auto-resizing on Hyprland. Includes windowrules for a smooth, borderless experience. Can integrate into walker menus alongside Omarchy's default Windows VM.
+Provides an accessible "click-to-install" Kali Linux VM using a dockerized QEMU environment. Intended for [Omarchy](https://github.com/basecamp/omarchy), but works on any Arch setup with Docker. Supports clipboard sharing, display auto-resizing, and borderless integration on Hyprland.
 
-##  Installation
-Available on the AUR:
+> This is a security-hardened fork of [r3b1s/omarchy-kali-vm](https://github.com/r3b1s/omarchy-kali-vm).
+> Key changes: QCOW2 patching runs host-side (no `--privileged` container), GPG fingerprint
+> allowlist with `VALID SIG` verification, pinned Docker image digest, hardened runtime container.
+
+## Installation
+
+### From source
+
+```sh
+git clone https://github.com/Skydope/omarchy-kali-vm.git
+cd omarchy-kali-vm
+sudo make install
+```
+
+### AUR (coming soon)
 
 ```sh
 yay -S omarchy-kali-vm
 ```
 
-After installation you must run `omarchy-kali-vm-integrate-os` to import the Hyprland windowrules and Walker menu entries into your `~/.config`. This can easily be undone with `omarchy-kali-vm-unintegrate-os`.
+### Dependencies
 
+| Dependency | Package | Notes |
+|-----------|---------|-------|
+| `docker` + compose plugin | docker | Container runtime |
+| `gum` | gum | Interactive TUI prompts |
+| `curl` | curl | Downloading archives and keys |
+| `gpg` | gnupg | Cryptographic verification |
+| `remote-viewer` | virt-viewer | SPICE display client |
+| `sha256sum` | coreutils | Checksum verification |
+| `sudo` | sudo | NBD module loading, privileged patching |
+| `qemu-nbd`, `qemu-img` | qemu-base | QCOW2 offline patching (host-side) |
+| `sfdisk`, `lsblk`, `blockdev` | util-linux | Partition manipulation |
+| `e2fsck`, `resize2fs` | e2fsprogs | Filesystem resize |
+| `parted` | parted | Partition probing |
+| `openssl` | openssl | Password hashing |
+| `7z` | 7zip | Archive extraction (verify with `pacman -F 7z`) |
 
-## Summary
-Adds first-class Kali VM support to Omarchy via `omarchy-kali-vm`. Uses [`qemux/qemu`](https://github.com/qemus/qemu), a containerized QEMU environment, to minimize dependencies. The only external dependency required is `virt-viewer` for the SPICE display. Clipboard integration and desktop resizing are available out of the box.
-
-The implementation intentionally follows the Windows VM design pattern, but adapts it for **Kali’s prebuilt QEMU images**.
-
-### Scope
-The package does not edit `~/.local/share/omarchy` and does not clean up user dotfiles automatically on install or uninstall.
-
-- Base package: launcher command, icon, packaged Hyprland and Omarchy menu snippets, and documentation.
-- User runtime data: `~/.config/kali`, `~/.kali`, `~/Kali`, and the runtime-created desktop entry in `~/.local/share/applications`.
-- Optional Omarchy integration: user-run helpers that add or remove Omarchy menu and Hyprland sourcing under `~/.config`. The Hyprland window rules make the SPICE viewer behave like a native Omarchy app. The runtime-created launcher works without Omarchy; Omarchy-specific menu and Hyprland integration is opt-in
-
-### Patching the QEMU Image
-The QEMU Image is patched during initial setup to apply selected configurations, expand the virtual harddrive and filesystem. While patching, SPICE agent support is wired in so resize events propagate properly. XFCE was given a small autoresize helper that polls `xrandr`, applies the preferred mode when the display changes, and restarts the user-session `spice-vdagent` if needed. That extra guest-side step was necessary because XFCE was not reliably applying the new SPICE-provided resolution on its own, which in turn caused mouse alignment to break after resizes.
-
-### Control Flow
-1. The user runs `omarchy-kali-vm install` from a terminal or an Omarchy-integrated menu entry. This is a first-time setup command and exits early if managed Kali VM state already exists.
-2. The script gathers VM resources and guest credentials from the user, writes the Kali compose config, and prepares local storage under `~/.kali`.
-3. It downloads the latest weekly Kali QEMU archive, verifies it cryptographically, extracts the QCOW2, and patches the image offline with the configured user/session changes. If something goes wrong with the weekly image, the script falls back to the latest current/stable Kali QEMU archive.
-4. It starts the VM through the `qemux/qemu` container, waits for the SPICE socket, writes a user-owned `Kali` desktop entry, and opens `remote-viewer`. By default, closing the viewer powers the VM down cleanly.
-5. Later launches reuse the same compose/storage setup and just start the VM and connect over SPICE.
-6. Removal tears down the Kali VM state from the same entrypoint and removes the runtime-created launcher.
+After installation run `omarchy-kali-vm-integrate-os` to import Hyprland windowrules and Walker menu entries.
 
 ## Commands
 
-- `omarchy-kali-vm install`
-- `omarchy-kali-vm install --debug`
-- `omarchy-kali-vm launch`
+- `omarchy-kali-vm install [--debug]`
+- `omarchy-kali-vm launch [-k|--keep-alive]`
 - `omarchy-kali-vm stop`
 - `omarchy-kali-vm status`
-- `omarchy-kali-vm remove`
-- `omarchy-kali-vm remove --debug`
+- `omarchy-kali-vm verify-image`
+- `omarchy-kali-vm remove [--debug]`
 - `omarchy-kali-vm-integrate-os`
 - `omarchy-kali-vm-unintegrate-os`
 
-For Omarchy users, `omarchy-kali-vm-integrate-os` enables the packaged Hyprland window rules for a smoother `remote-viewer` experience and adds fuller Omarchy menu integration for install and removal flows.
+## Security
 
-## Cleanup Boundaries
+- **GPG verification**: Kali archive signing keys verified against an allowlist of known fingerprints using `--status-fd` + `VALIDSIG` (immune to key-bundle attacks).
+- **Image pinning**: `qemux/qemu` Docker image pinned by SHA256 digest. Run `omarchy-kali-vm verify-image` to check.
+- **No privileged containers**: QCOW2 patching runs host-side with explicit `sudo` commands. Docker Hub is removed from the privileged trust path.
+- **Runtime hardening**: Container runs with `no-new-privileges`, `cap_drop: ALL`, only `NET_ADMIN` granted.
+- **SPICE socket**: `chown` + `chmod 660` — only the owning user can connect.
 
-- Remove Kali VM data: `omarchy-kali-vm remove`
-- Remove Kali VM data but preserve archives and debug evidence: `omarchy-kali-vm remove --debug`
-- Remove optional Omarchy integration: `omarchy-kali-vm-unintegrate-os`
-- Remove the package: `yay -R omarchy-kali-vm`
+## Cleanup
 
-Additional details live in [docs/cleanup.md](/home/t/repos/omarchy-kali-vm/docs/cleanup.md) and [docs/integration.md](/home/t/repos/omarchy-kali-vm/docs/integration.md).
+- Remove VM data: `omarchy-kali-vm remove`
+- Remove VM data preserving debug artifacts: `omarchy-kali-vm remove --debug`
+- Remove Omarchy integration: `omarchy-kali-vm-unintegrate-os`
+- Remove the package: `sudo make uninstall`
 
-## Context
-I had spent weeks convincing a security friend of mine to try out omarchy. And I succeeded: they went through the whole install and were *so* excited for the new system. But ultimately they decided to swap back to a "Spyware Microslop GUI-fest" (their words) because of bugs experienced and tinkering required getting a Kali VM working on Hyprland. Accessible Kali is an absolute must for them. This one's for you, Criz.
+## License
+
+MIT — forked from [r3b1s/omarchy-kali-vm](https://github.com/r3b1s/omarchy-kali-vm).
