@@ -178,6 +178,9 @@ services:
       - ALL
     cap_add:
       - NET_ADMIN
+      - NET_BIND_SERVICE
+      - SETGID
+      - SETUID
     volumes:
       - $HOME/.kali:/storage
       - $KALI_SHARED_DIR:/shared
