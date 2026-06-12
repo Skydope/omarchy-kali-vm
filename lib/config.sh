@@ -17,14 +17,14 @@ RUNTIME_DESKTOP_FILE="$USER_APPLICATIONS_DIR/omarchy-kali-vm.desktop"
 
 # qemux/qemu image digest — pinned for integrity, not trust establishment.
 # Bump process: verify Dockerfile + entrypoint upstream, docker pull, docker inspect.
-# Verificado: TODO por TODO
-readonly QEMU_IMAGE_DIGEST="qemux/qemu@sha256:TODO"
+# Verificado: 2026-06-12 por Skydope (Docker Hub API)
+readonly QEMU_IMAGE_DIGEST="qemux/qemu@sha256:a5321f216ee338ebd234873bb99d52b510ba4f8ed81aec28590c4ae10f3e2ce1"
 
 # Kali archive signing key fingerprints — allowlist for VALIDSIG verification.
 # These are primary key fingerprints. When Kali rotates keys, add the new
 # fingerprint here. Same bump process as QEMU_IMAGE_DIGEST: verify against
 # official Kali docs before updating.
-# Verificado contra docs oficiales de Kali: 2025-06 por plan
+# Verificado contra docs oficiales de Kali: 2026-06-12 por Skydope
 readonly KALI_ALLOWED_FINGERPRINTS=(
   "827C8569F2518CC677FECA1AED65462EC8D5E4C5"  # Archive Signing Key (2025) — firma actual
   "44C6513A8E4FB3D30875F758ED444FF07D8D0BF6"  # Kali Linux Repository (legacy, aún en keyring)

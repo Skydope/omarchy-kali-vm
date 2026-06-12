@@ -128,7 +128,7 @@ patch_qcow2() {
   sleep 2
 
   # Find and expand root partition
-  local ROOT_PART_PATH ROOT_PART_NUM PARTITION_LISTING LARGEST_PART_PATH
+  local ROOT_PART_PATH ROOT_PART_NUM="" PARTITION_LISTING LARGEST_PART_PATH
   ROOT_PART_PATH=$(lsblk -nrpo NAME,TYPE,FSTYPE "$NBD_DEV" | awk '$2 == "part" && ($3 == "ext4" || $3 == "ext3" || $3 == "ext2" || $3 == "xfs" || $3 == "btrfs") {print $1; exit}')
   LARGEST_PART_PATH=$(lsblk -nrbo NAME,SIZE,TYPE "$NBD_DEV" | awk '$3 == "part" {print $1, $2}' | sort -k2 -nr | awk 'NR == 1 {print $1}')
   PARTITION_LISTING=$(sudo sfdisk -l "$NBD_DEV" 2>/dev/null || true)

@@ -75,6 +75,13 @@ check_install_dependencies() {
   require_command gpg gnupg
   require_command remote-viewer virt-viewer
   require_command sha256sum coreutils
+  require_command qemu-nbd qemu-img
+  require_command qemu-img qemu-img
+  require_command sfdisk util-linux
+  require_command resize2fs e2fsprogs
+  require_command parted parted
+  require_command openssl openssl
+  require_command 7z 7zip
 }
 
 check_launch_dependencies() {
